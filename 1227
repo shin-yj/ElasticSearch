@@ -1,0 +1,898 @@
+# Click the Variables button, above, to create your own variables.
+GET ${exampleVariable1} // _search
+{
+  "query": {
+    "${exampleVariable2}": {} // match_all
+  }
+}
+
+# CREATE
+/* PUT [인덱스 이름]/_doc/[_id값]  # ID값을 직접 부여
+{
+  [문서 내용]
+}
+*/
+
+# 삽입
+PUT my_index/_doc/1 // my_index를 생성할거야, document 1번에는 밑의 내용이야 
+{
+  "title": "hello world",
+  "views": 1234,
+  "public": true,
+  "created": "2019-01-17T14:05:01.234Z"
+}
+
+# 조회
+GET my_index/_doc/1 //_source의 위의 내용 있음
+
+/* 수정 POST [인덱스 이름]/
+{
+  ID자동생성 [문서 내용]
+}
+*/
+
+# 내용의 일부만 본문에 달아서 수정할 때는 _update를 사용
+
+POST my_index/_update/1
+{
+  "doc": {
+    "title": "hello elasticsearch!"
+  }
+}
+
+# DELETE 
+DELETE my_index/_doc/1 // my_index의 document 1번 삭제하겠습니다.
+
+GET my_index/_search // 검색
+{
+  "query": {
+    "match": {
+      "title" : "hello"
+    }
+  }
+}
+
+PUT my_index/_doc/2
+{
+  "title": "hello world"
+}
+
+
+PUT my_index/_doc/3
+{
+  "title": "world"
+}
+
+PUT my_index/_doc/4
+{
+  "title": "world hello world"
+}
+# put과 post로 값을 넣는 것의 차이
+# 1. put은 수정을 위한 메소드라서 doc id까지 같이 넣어야 함
+# 2. post는 삽입을 위한 메소드라서 doc id 안넣어도 _id가 난수로 만들어짐
+PUT my_index/_doc/3
+{
+  "title": "world hello world 234"
+}
+
+POST my_index/_doc
+{
+  "title": "world hello world 234"
+}
+
+GET my_index/_doc/_obwpqYwB5puQkjBjjJah
+
+# DOC 번호를 굳이 생성하는 경우: 수정할 일이 많은 INDEX일 경우
+# DOC 번호를 굳이 생성하지 않는 경우: 수정할 필요가 거의 없는 경우(로그 수집, 생성되고 있는 정보를 보관하기 위한 INDEX)
+
+// my_index의 전체 조회
+GET my_index/
+GET my_index/_doc/3
+
+GET my_index/ // select * from my index와 같음
+
+// 단어 갯수에 비례해 매치되는 순서대로 조회됨
+GET my_index/_search/
+{
+  "query": {
+    "match": {
+      "title" : "hello"
+    }
+  }
+}
+
+GET my_index/_search/
+{
+  "query": {
+    "match_all": {
+      "title" : "hello"
+    }
+  }
+}
+
+GET my_index/_search/
+{
+  "query": {
+    "match_all": {
+    }
+  }
+}
+
+#  match_all이 생략된 상태
+GET my_index/_search/
+
+# match_phrase - 입력된 순서(문맥)대로 검색한다
+GET my_index/_search/
+{
+  "query": {
+    "match_phrase": {
+      "title" : "world hello"
+    }
+  }
+}
+
+GET my_index/_search/
+{
+  "query": {
+    "query_string": {
+      "default_field" : "title",
+      "query": "world hello"
+    }
+  }
+}
+
+GET my_index/_search?q=title:world // 간단한 단어 검색 
+GET my_index/_search?q=title:world hello
+GET my_index/_search?q=title:"world hello" // world hello 위치 맞게 검색
+
+
+# 명시적 맵핑
+/* 실습: array_test의 
+
+1번 문서의 longField에는 123, keywordField에는 [”this”, “is”, “it”]을,
+
+
+
+2번 문서의 longField에는 [1, 2, 3], keywordField에는 ”this is it”을,
+
+3번 문서의 longField에는 [1, ‘2’, 3], keywordField에는 [”this is it”, 1]을 인덱싱(색인)해보세요
+*/
+
+
+PUT array_test
+	{
+		"mappings": {
+			"properties": {
+				"longField": {
+				"type": "long"
+				},
+				"keywordField": {
+					"type": "keyword"
+				}
+			}
+		}
+}
+
+get my_index
+get array_test
+
+POST array_test/_doc/1
+	{
+		"longField": 123,
+		"keywordField": ["this", "is","it"]
+		}
+		
+GET array_test/_doc/1 // 잘 들어갔나 확인
+GET my_index
+
+POST array_test/_doc/2
+	{
+		"longField": [1,2,3],
+		"keywordField": "this is it"
+		}
+
+GET array_test/_doc/2 // 잘 들어갔나 확인
+GET my_index
+
+POST array_test/_doc/3
+	{
+		"longField": [1,"2",3], // longfield는 숫자만 받는 자리 -> 그래도 들어감
+		"keywordField": ["this is it", 1] // keyworldfield는 문자열만 받는 자리-> 그래도 들어감
+		}
+# 자료형이지만 들어가는 이유는 long, keyword 자료형은 배열이 아닌 경우 의미가 있기 때문
+# 꺼낼 때 의미있지 input할때는 의미를 갖지 않음
+GET array_test/_doc/3 // 잘 들어갔나 확인
+GET my_index
+
+# NoSQL의 특징 -> 데이터가 너무많아지면 세세한 정합성을 지키다가 에러가 나는 경우가 많음. 따라서 예외를 많이 허용
+POST woorifisa/_doc/
+{
+  "student": {
+    "name": "신짱구", // student.name 메모리
+    "age": 5 //student.age 메모리
+  }
+}
+
+POST woorifisa/_doc/
+{
+  "student": {
+    "name": "신짱구", // student.name  메모리 
+    "age": 5     // student.age  메모리 
+  }
+}
+
+# 내부적으로 평탄화해서 관리하는 object 자료형
+# text 자료형으로 검색
+# 역색인시 영어가 아닌 경우 띄어쓰기 단위로 토큰
+
+GET woorifisa/_search
+{
+  "query": {
+    "match": {
+      "student.name": "신짱구" // text 자료형으로 검색
+    }
+  }
+}
+
+get woorifisa/
+
+GET woorifisa/_search
+{
+  "query": {
+    "match": {
+      "student.name.keyword": "짱구" // keyword 자료형으로 검색
+    }
+  }
+}
+# woorifisa에 내 이름 넣어서 2번 도큐먼트에 넣기 
+#신 연재
+
+POST woorifisa/_doc/2
+{
+  "student": {
+    "name": "신 연재"
+    "age": 5
+    }
+  }
+
+get woorifisa/_search
+{
+  "query": {
+    "match": {
+      "student.name.keyword": "신 연재"
+    }
+  }
+}
+
+get woorifisa/_mapping
+#nested 타입 - 배열의 두번째 관리 방법
+# 별도의 2개 doc을 내부적으로 엮어서 한 장처럼 활용
+
+PUT woorifisa_nested_test
+{
+  "mappings": {
+    "properties": {
+      "student": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "keyword"
+          },
+          "age": {
+            "type": "long"
+          }
+        }
+      }
+    }
+  }
+}
+
+get woorifisa_nested_test/_mapping
+
+GET woorifisa/
+# 내부적으로 평탄화해서 관리하는 object 자료형 
+# text 자료형으로 검색
+# text 자료형 - 역색인시 보통은 영어가 아닌 경우 띄어쓰기 단위로 토큰 발행합니다 
+GET woorifisa/_search
+{
+  "query": {
+    "match": {
+      "student.name": "짱구"  } 
+  }
+}
+
+# keyword 자료형으로 검색 - 통째로 검색
+GET woorifisa/_search
+{
+  "query": {
+    "match": {
+      "student.name.keyword": "짱구"  }
+  }
+}
+
+# woorifisa에 여러분 이름을 넣어서 2번 doc 생성
+# name: 김 연지
+POST woorifisa/_doc/2
+{
+  "student": {
+    "name": "김 연지",  
+    "age": 5  
+  }
+}
+
+# text 타입 
+GET woorifisa/_search
+{
+  "query": {
+    "match": {
+      "student.name": "김"  }
+  }
+}
+
+# keyword 타입 들어간 데이터 전체를 하나의 토큰으로 색인
+GET woorifisa/_search
+{
+  "query": {
+    "match": {
+      "student.name.keyword": "김 연지"  }
+  }
+}
+
+# name: This's my name로 값을 넣고 This, is, This's 검색해보세요 
+POST woorifisa/_doc/3
+{
+  "student": {
+    "name": "This's my name",  
+    "age": 5  
+  }
+}
+
+# 알파벳 
+# 소문자, 대문자 구분은 하지 않음 
+# 토크나이징 방법을 임의로 지정하지 않으면 띄어쓰기 단위
+GET woorifisa/_search
+{
+  "query": {
+    "match": {
+      "student.name": "THIS'S MY"  }
+  }
+}
+
+GET woorifisa/_mapping
+# NESTED 타입 - 배열의 두번째 관리 방법 
+# 별도의 2개 doc를 내부적으로 엮어서 한 장처럼 활용
+PUT woorifisa_nested_test
+{
+  "mappings": {
+    "properties": {
+      "student": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "keyword"
+          },
+          "age": {
+            "type": "long"
+          }
+        }
+      }
+    }
+  }
+}
+
+GET woorifisa_nested_test/_mapping
+
+POST woorifisa_nested_test/_doc/
+{
+  "student": {
+    "name": "신짱구", 
+    "age": 5    
+  }
+}
+
+POST woorifisa_nested_test/_doc/2
+{
+  "student": {
+    "name": "김 연지",  
+    "age": 5  
+  }
+}
+
+
+  
+POST woorifisa_nested_test/_doc/2
+{
+  "student": {
+    "name": "김 연지",  
+    "age": 5  
+  }
+}
+
+POST woorifisa_nested_test/_doc/2
+{
+  "student": {
+    "name": "김 연지",  
+    "age": 5  
+  }
+}
+
+# 에러가 아니라 '없음'으로 결과가 출력됨
+# nested type과 object type은 다른 쿼리로 검색을 한다 
+GET woorifisa_nested_test/_search
+{
+  "query": {
+    "nested": {
+      "path": "student",
+      "query": {
+        "match": {
+         "student.name": "김 연지"
+        }
+      }
+    }
+  }
+}
+
+GET test/_search
+
+# _bulk라는 명령어를 사용하면 데이터를 한꺼번에 집어넣을 수 있음
+post _bulk/
+{"index": {"_index" : "test", "_id":"1"}}
+{"account_number":1,"balance":39225,"firstname":"Amber","lastname":"Duke","age":32,"gender":"M","address":"880 Holmes Lane","employer":"Pyrami","email":"amberduke@pyrami.com","city":"Brogan","state":"IL"}
+{"index":{"_index" : "test", "_id":"6"}}
+{"account_number":6,"balance":5686,"firstname":"Hattie","lastname":"Bond","age":36,"gender":"M","address":"671 Bristol Street","employer":"Netagy","email":"hattiebond@netagy.com","city":"Dante","state":"TN"}
+{"index":{"_index" : "test", "_id":"13"}}
+{"account_number":13,"balance":32838,"firstname":"Nanette","lastname":"Bates","age":28,"gender":"F","address":"789 Madison Street","employer":"Quility","email":"nanettebates@quility.com","city":"Nogal","state":"VA"}
+{"index":{"_index" : "test", "_id":"18"}}
+{"account_number":18,"balance":4180,"firstname":"Dale","lastname":"Adams","age":33,"gender":"M","address":"467 Hutchinson Court","employer":"Boink","email":"daleadams@boink.com","city":"Orick","state":"MD"}
+{"index":{"_index" : "test", "_id":"20"}}
+{"account_number":20,"balance":16418,"firstname":"Elinor","lastname":"Ratliff","age":36,"gender":"M","address":"282 Kings Place","employer":"Scentric","email":"elinorratliff@scentric.com","city":"Ribera","state":"WA"}
+{"index":{"_index" : "test", "_id":"25"}}
+{"account_number":25,"balance":40540,"firstname":"Virginia","lastname":"Ayala","age":39,"gender":"F","address":"171 Putnam Avenue","employer":"Filodyne","email":"virginiaayala@filodyne.com","city":"Nicholson","state":"PA"}
+{"index":{"_index" : "test", "_id":"32"}}
+{"account_number":32,"balance":48086,"firstname":"Dillard","lastname":"Mcpherson","age":34,"gender":"F","address":"702 Quentin Street","employer":"Quailcom","email":"dillardmcpherson@quailcom.com","city":"Veguita","state":"IN"}
+
+# my_bulk라는 인덱스에 집어넣어 주세요 
+post my_bulk/_bulk
+{"index":{"_id":1}}
+{"message":"죽는 날까지 하늘을 우러러 한 점 부끄럼이 없기를"}
+{"index":{"_id":2}}
+{"message":"죽는 날까지 하늘을 우러러 한 점 부끄럼이 없기를, 잎새에 이는 바람에도 나는 괴로워했다"}
+{"index":{"_id":3}}
+{"message":"죽는 날까지 하늘을 우러러 한 점 부끄럼이 없기를,\n 잎새에 이는 바람에도 너는 괴로워했다"}
+{"index":{"_id":4}}
+{"message":"chrome google Chrome Google"}
+{"index":{"_id":5}}
+{"message":"하늘사 Google Chrome"}
+{"index":{"_id":6}}
+{"message":"pink"}
+{"index":{"_id":7}}
+{"message":"pinkRed"}
+{"index":{"_id":8}}
+{"message":"pink red blue"}
+{"index":{"_id":9}}
+{"message":"pink red blue black"}
+{"index":{"_id":10}}
+{"message":"pink red blue black green"}
+{"index":{"_id":11}}
+{"message":"pink blue red black green"}
+{"index":{"_id":12}}
+{"message":"pink pink"}
+
+
+# match_all, match, match_phrase, query_string
+
+# 띄어쓰기는 OR 을 의미합니다
+# 단어 사이에 AND를 넣으면 A AND B A도 있고 B도 있어야만 검색 가능 
+# test 인덱스에서 address 필드에 Madison 가 에 사는 사람이 누구인지,  Madison Street 에 사는 사람이 누군지 찾아주세요.
+
+GET test/_search
+{
+  "query": {
+    "match": {
+      "address": "Madison AND Street"
+    }
+  }
+}
+
+
+# match_all, match, match_phrase, query_string
+
+# 띄어쓰기는 OR 을 의미합니다
+# query_string에서 단어 사이에 AND를 넣으면 A AND B A도 있고 B도 있어야만 검색 가능 
+# test 인덱스에서 address 필드에 Madison 가 에 사는 사람이 누구인지,  Madison Street 에 사는 사람이 누군지 찾아주세요.
+
+GET test/_search
+{ "query": {
+  "match": {
+    "address": "Madison Street"
+    }
+  }
+}
+
+GET test/_search
+{ "query": {
+  "match_phrase": {
+    "address": "Madison Street"
+    }
+  }
+}
+
+# 전문검색(Full Text)
+# 범용적인 방법 
+
+# default_field  옵션은 필드 규제 
+GET test/_search
+{ "query": {
+  "query_string": {
+    "default_field": "lastname", 
+    "query": "Nanette"
+    }
+  }
+}
+
+GET test/_search
+{ "query": {
+  "query_string": {
+    "fields": ["firstname", "lastname"], 
+    "query": "Nanette"
+    }
+  }
+}
+GET test/_search
+{ "query": {
+  "query_string": {
+    "query": "Madison AND Street"
+    }
+  }
+}
+
+## Bool Query
+# 1. must : 꼭 포함
+# 2. must_not : 꼭 불포함
+# 3. should: 해당 조건이 있으면 검색 결과 순위(score)에서 상위 
+# 4. filter: 조건은 포함하되 검색결과 순위(score)에는 영향을 미치지 않음. 점수 계산 시간이 없으므로 속도가 조금 빠름.
+# {"query": {
+#  "bool": {
+#    "must" : [ # 꼭 있음
+#    {}
+#    ], 
+#    "must_not" : [  # 꼭 없어야 함
+#    {
+#    }],
+#    "should": [  # 있으면 점수 부여
+#    {}
+#    ],
+#    "filter" : { # 있는 애를 거르되 점수에는 영향을 미치지 않는 경우 
+#    }
+#  }
+#  }
+#}
+
+## test 인덱스에서 
+
+# 1. 나이가 34살이면서 여성인 사람 
+# must 내부 조건이 2개이므로 [ ](배열)로 감싸줍니다
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must":[{
+        "match": {
+          "age":34
+          }
+        },
+        {"match":{
+          "gender":"F"
+          }
+        }
+        ]
+    }
+  }
+}
+
+
+# 1-1. 나이가 34살이면서 firstname이 Dillard
+# Happy happy -> 역색인시 모두 소문자로 토큰발급합니다.  
+# 소문자, 대문자 안 가리고 검색됨
+# bool - must 
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "age": 34
+          }
+        },
+        {
+          "match": {
+            "firstname": "dillard"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# 2. (must)나이가 34살이면서 (must_not)성별이 F가 아닌 사람 
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"match": {
+          "age":34}
+        }
+      ],
+      "must_not": [
+        {"match": {
+          "gender": "F"
+        }}
+      ]
+    }
+  }
+}
+  
+# 3. balance가 30000보다 많은 사람
+
+GET test/_search
+{
+  "query": {
+    "bool":{
+      "must": [
+        {"range":{
+          "balance": {
+            "gte": 30000
+            }
+          }
+        }
+      ]
+    }
+    
+  }
+}
+
+# 4. balance가 30000보다 많으면서 Dillad가 아닌 사람
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "balance": {
+              "gte": 30000
+            }
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "firstname": "Dillard"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# eq(must - match) ne(must not - match)로 해결가능하기에 equal과 not equal은 동작하지 않습니다. 
+# gt > lt < 
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "balance": {
+              "eq": 39225
+            }
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "firstname": "Dillard"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# 5. balance가 30000보다 높으면서(must) state가 PA인 경우에 가중치 (should)
+# SHOULD와 일치하지 않는다고 걸러지는 것은 아닙니다. 다만 SHOULD 조건을 만족하면 점수가 더 부여됩니다.
+#  2.6739764
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"range": {
+          "balance": {
+            "gte": 30000
+          }
+        }}
+      ],
+      "should": [
+        { "match": {
+          "state": "PA"
+        }}
+      ]
+    }
+  }
+}
+
+
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"range": {
+          "balance": {
+            "gte": 30000
+          }
+        }}
+      ]
+    }
+  }
+}
+
+# 6. balance가 30000보다 높으면서 state가 PA인 경우를 검색하되 score에는 영향을 주지 않음(filter)
+ 
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"range": {
+          "balance": {
+            "gte": 30000
+          }
+        }}
+      ],
+      "filter": [
+        { "match": {
+          "state": "PA"
+        }}
+      ]
+    }
+  }
+}
+
+# 7. balance가 30000보다 높은 사람을 검색하되 score에는 영향을 주지 않으면서 age가 27인 경우 (filter) 
+# sholud 는 해당 경우에 대해 점수를 올려줍니다
+# filter는 해당 경우만 걸러내되 점수에는 영향을 주지 않습니다
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"range": {
+          "balance": {
+            "gte": 30000
+          }
+        }}
+      ],
+      "should": [ // should라서 27살이 아닌 사람도 나옴
+        { "match": {
+          "age": 27
+        }}
+      ]
+    }
+  }
+}
+
+GET test/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"range": {
+          "balance": {
+            "gte": 30000
+          }
+        }}
+      ],
+      "filter": [
+        { "wildcard": {
+          "state": "p?" // p로시작
+        }}
+      ]
+    }
+  }
+}
+
+
+# sholud 는 해당 경우에 대해 점수를 올려줍니다
+# filter는 해당 경우만 걸러내되 점수에는 영향을 주지 않습니다
+
+# sql의 와일드카드와 비슷한 기능을 제공합니다.
+# * : 0개 이상의 모든 글자
+# ? : ? 1개당 한 글자
+GET test/_search
+{
+  "query": {
+    "query_string": {
+      "default_field": "state",
+      "query": "?L"
+    }
+  }
+}
+
+GET test/_search
+{ "query": {
+  "query_string": {
+    "fields": ["firstname", "lastname"], 
+    "query": "Nanette"
+    }
+  }
+}
+
+# D로 firstname이 시작하는 사람
+
+GET test/_search
+{
+  "query": {
+    "query_string": {
+      "default_field": "state",
+      "query": "D*"
+    }
+  }
+}
+
+# D로 firstname이 시작하는 4글자의 사람
+GET test/_search
+{
+  "query": {
+    "query_string": {
+      "default_field": "state",
+      "query": "D???" // ? 하나당 한 글자
+    }
+  }
+}
+# firstname 혹은 lastname이 D 어쩌고인 사람 
+GET my_bulk, test/_search // my_bulk 아니면 test search에서 찾아주세요
+{
+  "query": {
+    "query_string": { // 전체 필드에서 d로 시작하는 것 
+      "query": "d*"
+    }
+  }
+}
+
+# firstname 혹은 lastname(fields)이 D 어쩌고인 사람 (D*)
+GET test/_search
+{
+  "query": {
+    "query_string": {
+      "fields": ["firstname", "lastname"],
+      "query": "d*"
+    }
+  }
+}
+
+GET test/_search
+{
+  "query": {
+    "query_string": {
+      "query": "d*"
+    }
+  }
+}
+
+GET my_bulk,test/_search
+{
+  "query": {
+    "query_string": {
+      "query": "d*"
+    }
+  }
+}
+
+# 내부적으로는 와일드카드를 꼭 필요하면 쓰지만 외부에서 접속해야하는 경우에 대해서는 권장하지 않습니다. (서버 과부하 우려)
