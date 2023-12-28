@@ -1,0 +1,798 @@
+# 2일차
+# 1. google 이라는 단어가 들어간 모든 문서를 검색해보세요
+# match는 소문자 대문자 안가리고 검색을 해줍니다 
+# 띄어쓰기가 OR로 취급됩니다
+GET my_bulk/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+# 색인시 소문자로 색인하기 때문에 대소문자 구분 X 
+GET my_bulk/_search
+{
+  "query": {
+    "match": {
+      "message": "google"
+    }
+  }
+}
+
+# 2. Chrome Google이 순서대로 들어있는 문서를 검색
+GET my_bulk/_search
+{
+  "query": {
+    "match_phrase": {
+      "message": "chrome google"
+    }
+  }
+}
+
+# 3. pink가 들어가되 blue가 같이 들어있는 경우 가중치 부여 (blue가 없는 경우는 후순위로 검색)
+# pink - must
+# blue - should  
+GET my_bulk/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": {
+          "message": "pink"
+        }}
+      ],
+      "should": [
+        {"match": {
+          "message": "blue"
+        }}
+      ]
+    }
+  }
+}
+
+# 4. pink가 들어가되 blue가 같이 들어있는 경우 SCORE는 바뀌지 않되 해당 조건을 검색
+GET my_bulk/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": {
+          "message": "pink"
+        }}
+      ],
+      "filter": [
+        {"match": {
+          "message": "blue"
+        }}
+      ]
+    }
+  }
+}
+
+# 5. "하늘사"라는 단어가 있거나 없거나 상관 없이 google, chrome이 들어간 경우 검색
+GET my_bulk/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {W
+          "match": {
+            "message": "google"
+          }
+        },
+        {
+          "match": {
+            "message": "Chrome"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# 6. 하늘사는 안들어가고 chrome은 들어가는 다큐먼트를 검색
+# 6-1. 하늘사가 없어서 점수를 부여하고 싶으면 must_not
+
+GET my_bulk/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "message": "google"
+          }
+        },
+        {
+          "match": {
+            "message": "Chrome"
+          }
+        }
+      ],
+      "must_not": [
+        {"match": {
+          "message": "하늘사"
+        }}
+      ]
+    }
+  }
+}
+
+# 6-2. 하늘사가 없다고 거기에 점수는 부여하지 않고 싶으면 filter
+GET my_bulk/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "query_string": {
+            "query": "chrome"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "match": {
+            "message": "하늘사"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+- whitespace 
+- stop
+- keyword
+- fingerprint 
+# 기본 애널라이저
+POST _analyze
+{
+  "analyzer": "standard",
+  "text": "Hello, HELLO, World!"
+}
+
+POST _analyze
+{
+  "analyzer": "fingerprint",
+  "text": "Yes yes, Gödel said this sentence is consistent and."
+}
+
+
+# html strip 캐릭터필드 적용
+POST _analyze
+{
+  "char_filter": ["html_strip"],
+  "text": "<p>I&apos;m so <b>happy</b>!</p>"
+}
+
+
+POST _analyze
+{
+  "tokenizer": "keyword", 
+  "text": "Hello, HELLO, World!"
+}
+
+POST _analyze
+{
+  "tokenizer": {
+    "type": "ngram",
+    "min_gram": 3,
+    "max_gram": 4
+  },
+  "text": "Hello, World!"
+}
+
+# "o, W"나 ", Wo"나 "ld!"처럼 공백 문자나 문장 부호가 포함되어 사실상 의미가 없는 토큰도 포함되는데... 
+# token_chars라는 속성을 사용한다면?
+
+POST _analyze
+{
+  "tokenizer": {
+    "type": "ngram",
+    "min_gram": 3,
+    "max_gram": 4,
+    "token_chars": ["letter"]
+  },
+  "text": "Hello, World!"
+}
+
+# edge_ngram
+# 모든 토큰의 시작 글자를 단어의 시작 글자로 고정시켜서 생성 
+# - llo 같은 토큰은 생성되지 않음
+POST _analyze
+{
+  "tokenizer": {
+    "type": "edge_ngram",
+    "min_gram": 3,
+    "max_gram": 4,
+    "token_chars": ["letter"]
+  },
+  "text": "Hello, World!"
+}
+
+POST _analyze
+{
+  "filter": [ "lowercase" ],
+  "text": "Hello, World!"
+}
+
+GET /_analyze
+{
+  "tokenizer": "standard",
+  "filter": [
+    {
+      "type": "condition",
+      "filter": [ "lowercase" ],
+      "script": {
+        "source": "token.getTerm().length() < 5"
+      }
+    }
+  ],
+  "text": "THE QUICK BROWN FOX"
+}
+
+bin\elasticsearch-plugin install analysis-kuromoji
+
+$ bin\elasticsearch-plugin install analysis-nori
+$ bin\elasticsearch-plugin install analysis-kuromoji
+$ bin/elasticsearch-plugin install analysis-smartcn
+
+GET /_analyze
+{
+  "analyzer": "standard",
+  "text" : "잎새에 스치는 바람에도 나는 괴로워했다."
+}
+
+
+GET /_analyze
+{
+  "tokenizer": "standard",
+  "filter": [
+    {
+      "type": "condition",
+      "filter": [ "lowercase" ],
+      "script": {
+        "source": "token.getTerm().length() < 5"
+      }
+    }
+  ],
+  "text": "THE QUICK BROWN FOX"
+}
+
+GET /_analyze
+{
+  "analyzer": "standard",
+  "text" : "잎새에 스치는 바람에도 나는 괴로워했다."
+}
+
+# 잎사귀/에/스치다/는/바람/에/도/나/는/괴롭다/했/다. 
+GET /_analyze
+{
+  "tokenizer": "nori_tokenizer",
+  "text" : "잎새에 스치는 바람에도 나는 괴로워했다."
+}
+
+
+GET /_analyze
+{
+  "tokenizer": "nori_tokenizer",
+  "text" : "뒷동산에 @ 사과나무 심기!"
+}
+
+# 데이터는 인덱스에 저장됩니다
+# 토크나이저를 커스터마이징하려면 해당 인덱스에 설정을 미리 해줍니다.
+# doc에 자료형을 미리 인덱스에 정해줬던 것처럼 토크나이저도 인덱스를 만들 때 삽입할 수 있습니다.
+# 이미 있는 인덱스에도 삽입 가능합니다. -> 전에 넣은 텍스트는 standard 방식으로 토큰화됩니다.
+
+PUT my_nori
+{
+  "settings": {
+    "analysis": {
+      "tokenizer": {
+        "my_nori_tokenizer": {
+          "type" : "nori_tokenizer",
+          "user_dictionary_rules" : ["사과나무", "감나무"]
+        }
+      }
+    }
+  }
+}
+
+# 사과나무 감나무 호두 나무 
+# 사과 나무 검색, 사과나무 
+PUT my_nori/_doc/1
+{
+  "text" : "뒷동산에 @ 사과나무 호두나무 감나무 심기!"
+}
+
+GET my_nori/_search
+
+
+
+
+DELETE my_nori
+
+# 사용자 지정한 분석기를 이용하려면 해당 필드에 직접 적용해줘야 합니다. 이 과정을 매핑(Mapping)이라고 합니다.
+
+PUT my_nori
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_analyzer": {
+          "tokenizer": "my_nori_tokenizer", 
+          "filter": "nori_readingform"
+        }
+      },
+      "tokenizer": {
+        "my_nori_tokenizer": {
+          "type": "nori_tokenizer",
+          "user_dictionary_rules": [
+            "사과나무",
+            "감나무"
+          ]
+        }
+      }
+    }
+  },
+      "mappings": {
+        "properties": {
+            "text": {
+                "type": "text",
+                "analyzer": "my_analyzer"
+            }
+        }
+    }
+}
+
+GET my_nori/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text" : "뒷동산에 @ 사과나무 호두나무 감나무 심기! 中國"
+}
+
+PUT my_nori/_doc/1
+{
+  "text" : "뒷동산에 @ 사과나무 호두나무 감나무 심기! 中國"
+}
+
+GET my_nori/_search
+{
+  "query": {
+    "match": {
+      "text": "중국"
+    }
+  }
+}
+
+
+GET my_nori/_search
+{
+  "query": {
+    "match": {
+      "text": "中國"
+    }
+  }
+}
+
+# 32000원 3.2만원 3,2000원
+# 영일영-일이삼사-오륙칠팔 
+DELETE my_nori
+
+# 사용자 지정한 분석기를 이용하려면 해당 필드에 직접 적용해줘야 합니다. 이 과정을 매핑(Mapping)이라고 합니다.
+
+PUT my_nori
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_analyzer": {
+          "tokenizer": "my_nori_tokenizer", 
+          "filter": ["nori_readingform", "nori_number"]
+        }
+      },
+      "tokenizer": {
+        "my_nori_tokenizer": {
+          "type": "nori_tokenizer",
+          "user_dictionary_rules": [
+            "사과나무",
+            "감나무"
+          ]
+        }
+      }
+    }
+  },
+      "mappings": {
+        "properties": {
+            "text": {
+                "type": "text",
+                "analyzer": "my_analyzer"
+            }
+        }
+    }
+}
+
+GET my_nori/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text" : "뒷동산에 @ 사과나무 호두나무 감나무 심기! 中國"
+}
+
+PUT my_nori/_doc/1
+{
+  "text" : "뒷동산에 @ 사과나무 호두나무 감나무 심기! 中國"
+}
+
+GET my_nori/_search
+{
+  "query": {
+    "match": {
+      "text": "중국"
+    }
+  }
+}
+
+
+GET my_nori/_search
+{
+  "query": {
+    "match": {
+      "text": "中國"
+    }
+  }
+}
+
+# 32000원 3.2만원 3,2000원
+# 영일영-일이삼사-오륙칠팔 
+GET my_nori/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text" : "32000원 3.2만원 32000원"
+}
+
+GET my_nori/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text" : "공일공-일이삼사-오육칠팔"
+}
+
+
+
+
+PUT my_nori
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_analyzer": {
+          "tokenizer": "my_nori_tokenizer", 
+          "filter": ["nori_posfilter", "nori_readingform", "nori_number"]
+        }
+      },
+      "tokenizer": {
+        "my_nori_tokenizer": {
+          "type": "nori_tokenizer",
+          "user_dictionary_rules": [
+            "사과나무",
+            "감나무"
+          ]
+        }
+      },
+      "filter" :{
+        "nori_posfilter":{
+          "type": "nori_part_of_speech",
+          "stoptags": [
+    "E",
+    "IC",
+    "J",
+    "MAG", "MAJ", "MM",
+    "SP", "SSC", "SSO", "SC", "SE",
+    "XPN", "XSA", "XSN", "XSV",
+    "UNA", "NA", "VSV"
+]
+        }
+      }
+    }
+  },
+      "mappings": {
+        "properties": {
+            "text": {
+                "type": "text",
+                "analyzer": "my_analyzer"
+            }
+        }
+    }
+}
+
+GET my_nori/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text" : "아! 뒷동산에 @ 사과나무 호두나무 감나무 심기! 中國"
+}
+
+
+
+# 별도의 본인들 만의 nori_poem이라는 토크나이저로 아래 시를 분석해보세요. 3인 1조
+# 엑셀 시트 - 조장 이름 옆에 코드 올려주시고 3시 10분에 발표합니다
+GET my_nori/_search
+{
+  "query": {
+    "match": {
+      "text": "中國"
+    },
+    "explain": true
+  }
+}
+
+GET my_nori/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text" : "아! 뒷동산에 @ 사과나무 호두나무 감나무 심기! 中國",
+   "explain" : true  # 분석 결과 확인 가능
+}
+
+별 헤는 밤
+
+                         윤동주 /시인
+ 
+
+계절이 지나가는 하늘에는
+가을로 가득 차 있습니다.
+ 
+ 
+나는 아무 걱정도 없이
+가을 속의 별들을 다 헤일 듯합니다.
+ 
+ 
+가슴속에 하나 둘 새겨지는 별을
+이제 다 못 헤는 것은
+쉬이 아침이 오는 까닭이요,
+내일 밤이 남은 까닭이요,
+아직 나의 청춘이 다하지 않은 까닭입니다.
+ 
+ 
+별 하나에 추억과
+별 하나에 사랑과
+별 하나에 쓸쓸함과
+별 하나에 憧憬과
+별 하나에 詩와
+별 하나에 어머니, 어머니
+ 
+ 
+어머님, 나는 별 하나에 아름다운 말 한마디씩 불러봅니다.
+소학교 때 책상을 같이 했던 아이들의 이름과 佩, 鏡,
+玉 이런 異國少女들의 이름과, 벌써 아기 어머니
+된 계집애들의 이름과, 가난한 이웃사람들의 이름과, 비둘기,
+강아지, 토끼, 노새, 노루, 프랑시스 잼, 라이너 마리아 릴케,
+이런 시인의 이름을 불러 봅니다.
+ 
+ 
+이네들은 너무나 멀리 있습니다
+별이 아스라이 멀듯이.
+ 
+ 
+어머님,
+그리고 당신은 멀리 北間島에 계십니다.
+ 
+ 
+나는 무엇인지 그리워서
+이 많은 별빛이 내린 언덕 위에
+내 이름자를 써 보고,
+흙으로 덮어 버리었습니다.
+ 
+ 
+딴은 밤을 새워 우는 벌레는
+부끄러운 이름을 슬퍼하는 까닭입니다.
+ 
+ 
+그러나 겨울이 지나고 나의 별에도 봄이 오면,
+무덤 위에 파란 잔디가 피어나듯이
+내 이름자 묻힌 언덕 위에도
+자랑처럼 풀이 무성할 게외다.
+
+
+
+
+
+---
+
+GET nori_poem/_search
+{
+  "query": {
+    "match": {
+      "text": "中國"
+    }
+  },
+  "explain": true
+}
+
+
+--- 간단 프로젝트 ---
+
+delete nori_poem
+
+
+POST nori_poem/_close
+
+
+delete nori_poem
+# 인덱스 닫기
+POST nori_poem/_close
+POST nori_poem/_open
+
+
+
+PUT nori_poem
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_analyzer": {
+          "tokenizer": "my_nori_tokenizer",
+          "filter": ["nori_posfilter", "nori_readingform"]
+        }
+      },
+      "tokenizer": {
+        "my_nori_tokenizer": {
+          "type": "nori_tokenizer",
+          "user_dictionary_rules": [
+            "별헤는밤", "憧憬", "윤동주", "憧憬", "소학교", "異國少女", "프랑시스잼", "프랑시스", "라이너마리아릴케", "北間島"
+          ],
+          "decompound_mode": "mixed"
+        }
+      },
+      "filter": {
+        "nori_posfilter": {
+          "type": "nori_part_of_speech"
+        },
+        "nori_readingform": {
+          "type": "nori_readingform"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "text": {
+        "type": "text",
+        "analyzer": "my_analyzer"
+      }
+    }
+  }
+}
+
+
+
+PUT nori_poem/_doc/1
+{
+  "text": """
+  별 헤는 밤
+
+                         윤동주 /시인
+ 
+
+계절이 지나가는 하늘에는
+가을로 가득 차 있습니다.
+ 
+ 
+나는 아무 걱정도 없이
+가을 속의 별들을 다 헤일 듯합니다.
+ 
+ 
+가슴속에 하나 둘 새겨지는 별을
+이제 다 못 헤는 것은
+쉬이 아침이 오는 까닭이요,
+내일 밤이 남은 까닭이요,
+아직 나의 청춘이 다하지 않은 까닭입니다.
+ 
+ 
+별 하나에 추억과
+별 하나에 사랑과
+별 하나에 쓸쓸함과
+별 하나에 憧憬과
+별 하나에 詩와
+별 하나에 어머니, 어머니
+ 
+ 
+어머님, 나는 별 하나에 아름다운 말 한마디씩 불러봅니다.
+소학교 때 책상을 같이 했던 아이들의 이름과 佩, 鏡,
+玉 이런 異國少女들의 이름과, 벌써 아기 어머니
+된 계집애들의 이름과, 가난한 이웃사람들의 이름과, 비둘기,
+강아지, 토끼, 노새, 노루, 프랑시스 잼, 라이너 마리아 릴케,
+이런 시인의 이름을 불러 봅니다.
+ 
+ 
+이네들은 너무나 멀리 있습니다
+별이 아스라이 멀듯이.
+ 
+ 
+어머님,
+그리고 당신은 멀리 北間島에 계십니다.
+ 
+ 
+나는 무엇인지 그리워서
+이 많은 별빛이 내린 언덕 위에
+내 이름자를 써 보고,
+흙으로 덮어 버리었습니다.
+ 
+ 
+딴은 밤을 새워 우는 벌레는
+부끄러운 이름을 슬퍼하는 까닭입니다.
+ 
+ 
+그러나 겨울이 지나고 나의 별에도 봄이 오면,
+무덤 위에 파란 잔디가 피어나듯이
+내 이름자 묻힌 언덕 위에도
+자랑처럼 풀이 무성할 게외다."""
+}
+
+POST nori_poem/_open
+GET nori_poem/_analyze
+{
+  "analyzer": "my_analyzer",
+  "text": """
+  별 헤는 밤
+
+                         윤동주 /시인
+ 
+
+계절이 지나가는 하늘에는
+가을로 가득 차 있습니다.
+ 
+ 
+나는 아무 걱정도 없이
+가을 속의 별들을 다 헤일 듯합니다.
+ 
+ 
+가슴속에 하나 둘 새겨지는 별을
+이제 다 못 헤는 것은
+쉬이 아침이 오는 까닭이요,
+내일 밤이 남은 까닭이요,
+아직 나의 청춘이 다하지 않은 까닭입니다.
+ 
+ 
+별 하나에 추억과
+별 하나에 사랑과
+별 하나에 쓸쓸함과
+별 하나에 憧憬과
+별 하나에 詩와
+별 하나에 어머니, 어머니
+ 
+ 
+어머님, 나는 별 하나에 아름다운 말 한마디씩 불러봅니다.
+소학교 때 책상을 같이 했던 아이들의 이름과 佩, 鏡,
+玉 이런 異國少女들의 이름과, 벌써 아기 어머니
+된 계집애들의 이름과, 가난한 이웃사람들의 이름과, 비둘기,
+강아지, 토끼, 노새, 노루, 프랑시스 잼, 라이너 마리아 릴케,
+이런 시인의 이름을 불러 봅니다.
+ 
+ 
+이네들은 너무나 멀리 있습니다
+별이 아스라이 멀듯이.
+ 
+ 
+어머님,
+그리고 당신은 멀리 北間島에 계십니다.
+ 
+ 
+나는 무엇인지 그리워서
+이 많은 별빛이 내린 언덕 위에
+내 이름자를 써 보고,
+흙으로 덮어 버리었습니다.
+ 
+ 
+딴은 밤을 새워 우는 벌레는
+부끄러운 이름을 슬퍼하는 까닭입니다.
+ 
+ 
+그러나 겨울이 지나고 나의 별에도 봄이 오면,
+무덤 위에 파란 잔디가 피어나듯이
+내 이름자 묻힌 언덕 위에도
+자랑처럼 풀이 무성할 게외다."""
+}
+
+
+
+
