@@ -1,0 +1,1394 @@
+
+GET kibana_sample_data_ecommerce/_search //한 장 살펴보기
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, // 결과 중에 n개만 보여주는 역할  // size를 제거하면 부수적인 하나하나 결과 다 나옴, size:0을 넣으면 결과만 나옴
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  }
+}
+
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, // 결과 중에 n개만 보여주는 역할  // size를 제거하면 부수적인 하나하나 결과 다 나옴, size:0을 넣으면 결과만 나옴
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+  "aggs": { // 집계함수 쓸거야
+    "합계": {
+      "sum": {// sum 함수 쓸거야(실제 수행할 집계의 종류)
+        "field": "taxful_total_price" // 이 필드의 sum을 보여줘(eur로 계산한 총금액)
+    }
+  }
+}
+}
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, // 결과 중에 n개만 보여주는 역할  // size를 제거하면 부수적인 하나하나 결과 다 나옴, size:0을 넣으면 결과만 나옴
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+  "aggs": {
+    "세금 포함 합계": {
+      "sum": {
+        "field": "taxful_total_price"
+      }
+    },
+    "세금 불포함 합계": {
+      "sum": {
+        "field": "taxful_total_price"
+      }
+    },
+    "평균": {
+    "avg": {
+      "field": "taxful_total_price"
+    }
+  }
+  
+  }
+}
+
+
+
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, # 결과 중에 n개만 보여주는 역할 
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+  "aggs": {
+    "my-sum-aggregation-name": {
+      "sum": {
+        "field": "taxless_total_price"
+      }
+    }
+  }
+}
+
+# stats - 지정한 필드의 평균, 최댓값, 최솟값, 합, 개수를 모두 계산해서 반환
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, 
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+  "aggs": {
+    "my-stats-aggregation-name": {
+      "stats": {
+        "field": "taxless_total_price"
+      }
+    }
+  }
+}
+
+# "extended_stats": 집계된 document에서 Numerical field에 대한 모든 통계값을 생성
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, 
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+  "aggs": {
+    "my-stats-aggregation-name": {
+      "extended_stats": {
+        "field": "taxless_total_price"
+      }
+    }
+  }
+}
+
+# cardinality - 지정한 필드가 가진 고유한 값(변치 않는 고유한 값)의 개수를 계산해 반환한다.
+# HyperLogLog++ 알고리즘 을 사용해 추정한 근사값이다.
+# 대용량 데이터 중심으로 작동하기 때문에 전체 탐색은 되도록 '지양'함
+# '고유값'을 찾아도 완전 고유값이 아니라 근사치를 출력함
+# precision_threshold는 탐색을 위해 사용하는 메모리 용량 -  값이 클 수록 더 상세한 결과값이 나옴
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, 
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+"aggs": {
+    "my-cardinality-aggregation-name": {
+      "cardinality": {
+        "field": "customer_id",
+        "precision_threshold": 1000
+      }
+    }
+  }
+}
+
+# percentiles, percentile_ranks
+
+# 전체 고객의 분포를 백분위로 해서 보여줌
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, 
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+"aggs": {
+    "my-percentiles-aggregation-name": {
+      "percentiles": {
+        "field": "taxless_total_price"
+      }
+    }
+  }
+}
+
+# 수치화된 데이터를 백분율로 환산
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, 
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+"aggs": {
+    "my-percentiles-aggregation-name": {
+      "percentile_ranks": {
+        "field": "taxless_total_price",
+        "values": [50, 180] // 50불 , 180불은 몇퍼센트에 해당하는지
+      }
+    }
+  }
+}
+# meta
+# meta tag를 이용해 request 시 집계에 대한 추가 데이터를 추가할 수 있다. 
+# 그리고 response 시 이 데이터를 얻을 수 있다.
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0, 
+  "query": {
+    "term": {
+      "currency": {
+        "value": "EUR"
+      }
+    }
+  },
+  "aggs": {
+    "my-stats-aggregation-name": {
+      "extended_stats": {
+        "field": "taxless_total_price"
+      },
+       "meta": { // 속성 자체의 이름은 meta여야함
+        "설명" : "taxless_total_price에 대한 통계량" // 여기는 key-value값으로 자유로 지정
+      }
+    }
+  }
+}
+
+# 1. 원래 있었던 bank 인덱스를 삭제하고 아래 데이터를 넣어주세요.
+delete bank
+
+
+Post _bulk // 인덱스 있으므로 인덱스명 제외하고 벌크 명령어 
+{"index":{"_index":"bank", "_id": "1"}}
+{"date": "2018-06-01", "bank": "NH농협은행", "branch": "1호점", "location": "종각", "customers": 2314}
+{"index":{"_index":"bank", "_id": "2"}}
+{"date": "2017-06-01", "bank": "NH농협은행", "branch": "1호점", "location": "강남", "customers": 5412}
+{"index":{"_index":"bank", "_id": "3"}}
+{"date": "2017-07-10", "bank": "국민은행", "branch": "1호점", "location": "강남", "customers": 2543}
+{"index":{"_index":"bank", "_id": "4"}}
+{"date": "2018-07-15", "bank": "NH농협은행", "branch": "2호점", "location": "강남", "customers": 4456}
+{"index":{"_index":"bank", "_id": "5"}}
+{"date": "2019-08-07", "bank": "NH농협은행", "branch": "3호점", "location": "강남", "customers": 1562}
+{"index":{"_index":"bank", "_id": "6"}}
+{"date": "2020-08-18", "bank": "NH농협은행", "branch": "4호점", "location": "강남", "customers": 5724}
+{"index":{"_index":"bank", "_id": "7"}}
+{"date": "2020-09-02", "bank": "국민은행", "branch": "1호점", "location": "신촌", "customers": 1002}
+{"index":{"_index":"bank", "_id": "8"}}
+{"date": "2020-09-11", "bank": "국민은행", "branch": "1호점", "location": "양재", "customers": 4121}
+{"index":{"_index":"bank", "_id": "9"}}
+{"date": "2020-09-20", "bank": "NH농협은행", "branch": "3호점", "location": "홍제", "customers": 1021}
+{"index":{"_index":"bank", "_id": "10"}}
+{"date": "2020-10-01", "bank": "국민은행", "branch": "1호점", "location": "불광", "customers": 971}
+{"index":{"_index":"bank", "_id": "11"}}
+{"date": "2019-06-01", "bank": "NH농협은행", "branch": "2호점", "location": "종각", "customers": 875}
+{"index":{"_index":"bank", "_id": "12"}}
+{"date": "2018-06-01", "bank": "국민은행", "branch": "2호점", "location": "강남", "customers": 1506}
+{"index":{"_index":"bank", "_id": "13"}}
+{"date": "2020-09-02", "bank": "국민은행", "branch": "2호점", "location": "신촌", "customers": 3912}
+{"index":{"_index":"bank", "_id": "14"}}
+{"date": "2020-09-11", "bank": "국민은행", "branch": "2호점", "location": "양재", "customers": 784}
+{"index":{"_index":"bank", "_id": "15"}}
+{"date": "2020-10-01", "bank": "국민은행", "branch": "2호점", "location": "불광", "customers": 4513}
+{"index":{"_index":"bank", "_id": "16"}}
+{"date": "2020-10-01", "bank": "국민은행", "branch": "3호점", "location": "불광", "customers": 235}
+{"index":{"_index":"bank", "_id": "17"}}
+{"date": "2016-07-01", "bank": "기업은행", "branch": "1호점", "location": "불광", "customers": 971}
+{"index":{"_index":"bank", "_id": "18"}}
+{"date": "2017-10-01", "bank": "기업은행", "branch": "2호점", "location": "불광", "customers": 100}
+{"index":{"_index":"bank", "_id": "19"}}
+{"date": "2018-11-01", "bank": "기업은행", "branch": "3호점", "location": "불광", "customers": 151}
+{"index":{"_index":"bank", "_id": "20"}}
+{"date": "2020-10-01", "bank": "기업은행", "branch": "4호점", "location": "불광", "customers": 1302}
+
+get bank
+
+# - 1) bank의 모든 고객수는 몇 명인가요?
+// 전체 검색 -> sum
+get bank/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "size": 0, // 1이면 샘플 하나만 보여줌
+  "aggs": {
+    "bank의 모든 고객 수":{
+      "sum": {
+        "field": "customers"
+      }
+    }
+  }
+}
+
+# - 2) bank들 중에서 최소 고객을 보유한 은행의 고객 수는  몇 명인가요? 
+
+get bank/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "size": 0, // 1이면 샘플 하나만 보여줌
+  "aggs": {
+    "bank의  최소 고객 수":{
+      "min": {
+        "field": "customers"
+      }
+    }
+  }
+}
+
+# 은행은 어디인지도 같이 적어주세요.
+get bank/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "size":0, // 조회 구문, 조회가 이루어져야 집계함수 쓰임
+  "aggs": {
+    "bank의  최소 고객 수":{
+      "min": {
+        "field": "customers"
+      }
+    }
+  }
+}
+
+get bank/_search
+{
+  "query": {
+    "match": {
+      "customers": 100 // customer가 100명인 은행
+    }
+  }
+}
+#- 3) 불광지역에 있는 모든 은행들을 검색해보세요.
+get bank/_search
+{
+  "query": {
+    "match": {
+      "location": "불광"
+    }
+  }
+}
+#- 4) 불광지역에 있는 모든 은행 고객수를 합하면 몇 명인가요?*/
+
+get bank/_search
+{
+  "query": {
+    "match": {
+      "location": "불광"
+    }
+  },
+  "size": 0,
+  "aggs": { // 불광지역의 aggregations
+    "불광 지역 모든 고객 수": {
+      "sum": {
+        "field": "customers"
+        
+      }
+    }
+  }
+}
+
+
+# 5) 불광지역에 있는 가장 고객이 적은 은행의 고객수, 모든 은행 고객수 - 1개의 응답으로 받아주세요 
+GET bank/_search
+{
+  "query": {
+    "match": {
+       "location": "불광"
+    }
+  },
+  "size": 0,
+  "aggs": {
+    "모든고객수": {
+      "sum": {
+        "field": "customers"
+      },
+      "meta":{
+      "설명": "불광지역에 대한 고객 정보"
+    }
+    },
+    "방문자고객수": {
+      "min": {
+        "field": "customers"
+      },
+      "meta":{
+      "설명": "불광지역에 대한 고객 정보"
+    }
+    }
+    
+  }
+}
+
+
+
+# 집계 -> 해당 결과를 바탕으로 검색
+
+# 1. 전체 은행 중에 방문고객이 상위 25% 이상인 은행들은 어디일까요? 
+GET bank/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "size": 0,
+  "aggs": {
+    "상위 25% 이상 방문 고객을 가진 은행의 방문 고객 수": {
+      "percentiles": {
+        "field": "customers",
+        "percents": [
+          75
+        ]
+      }
+    }
+  }
+}
+
+# 3964.25
+# 범위(range)는 bool 쿼리 - must/must_not/should/filter 등의 API로 값을 검색
+GET bank/_search
+{
+  "query": {
+    "match": {
+      "customers": {
+        "gte" : 3964.25
+      }
+    }
+  }
+}
+
+GET bank/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"range": {
+          "customers": {
+            "gte": 3964.25
+          }
+        }}
+      ]
+    }
+    
+  }
+}
+# 2. 5000명정도 방문하는 은행은 전체 점포 중 몇퍼센트 정도의 위치를 점하고 있을까요?
+GET bank/_search
+{
+  "query": {
+    "match_all": {}
+  },
+  "size": 0,
+  "aggs": {
+    "5000명 이상 방문 고객을 가진 은행의 방문 고객 수": {
+      "percentile_ranks": {
+        "field": "customers",
+        "values": [ 5000   ]
+      }
+    }
+  }
+}
+
+# 어느어느 은행인지도 찾아주세요. 
+GET bank/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"range": {
+          "customers": {
+            "gte": 5000
+          }
+        }}
+      ]
+    }
+    
+  }
+}
+# 버킷집계 - 특정 구간으로 전체를 쪼개서 경향성 확인
+GET kibana_sample_data_flights/_search
+
+# from: ~이상(개구간), to: 미만(폐구간)
+
+GET kibana_sample_data_flights/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {} // 특정 조건에 맞는 데이터 모두 가져옴
+  },
+  "aggs": {
+    "distance-kilometers-range": {
+      "range": {
+        "field": "DistanceKilometers",
+        "ranges": [ // 3개의 구간
+          {
+            "to": 5000 // 5000미터 미만
+          },
+          {
+            "from": 5000, // 5000~10000미터
+            "to": 10000
+          },
+          {
+            "from": 10000 // 10000미터 이상
+          }
+        ]
+      },
+      "aggs": {
+        "average-ticket-price": {
+          "avg": {
+            "field": "AvgTicketPrice"
+          }
+        }
+      }
+    }
+  }
+}
+
+# date_range 집계는 range 집계와 유사하나 date 타입 필드를 대상으로 사용한다는 점, 
+# from과 to에 간단한 날짜 시간 계산식을 사용할 수 있다는 점이 차이가 있습니다.
+# 각 구간에 평균 "taxless_total_price를 찾아 코드를 완성해주세요 -> pipeline이라는 별도의 집계 방법을 사용(SQL group by 뒤의 having과 같은 결과)
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "date-range-aggs": {
+      "date_range": {
+        "field": "order_date",
+        "ranges": [
+          {
+            "to": "now-10d/d"
+          },
+          {
+            "from": "now-10d/d",
+            "to": "now"
+          },
+          {
+            "from": "now"
+          }
+        ]
+      }
+    }
+  }
+}
+
+# histogram 집계는 지정한 필드의 값을 기준으로 버킷을 나눈다는 점에서
+# range 집계와 유사합니다.
+# 다른 점은 버킷 구분의 경계 기준값을 직접 지정하는 것이 아니라 
+# 버킷의 간격을 지정해서 경계를 나눈다는 점입니다.
+GET kibana_sample_data_flights/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "my-histogram": {
+      "histogram": {
+        "field": "DistanceKilometers",
+        "interval": 5000 //interval은 똑같은 개수로 지정하는 것. 5000킬로씩 구간을 나눠주세요   
+      }
+    }
+  }
+}
+
+# interval을 지정하면 해당 필드의 최솟값과 최댓값을 확인한 후 
+# 그 사이를 interval에 지정한 간격으로 쪼개서 버킷을 나눕니다. 
+# 특별히 지정하지 않으면 기본적으로 0을 기준으로 히스토그램의 계급을 나눕니다. 
+# 즉 interval이 1000이면 계급 구간은 [0, 1000), [1000, 2000), [2000, 3000) 등으로 생성됩니다.
+# 이 위치를 조정하고 싶을 때는 offset을 사용할 수 있습니다. 
+GET kibana_sample_data_flights/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "my-histogram": {
+      "histogram": {
+        "field": "DistanceKilometers",
+        "interval": 1000,
+        "offset": 50
+      }
+    }
+  }
+}
+# 데이터 특성상 음수 데이터는 존재하지 않지만 구간을 나누는 기준 offset이 50이고
+# interval이 1000이므로 [0, 50) 사이의 데이터가 소속되는 구간은 [-950, 50) 구간이 됩니다.
+
+# calendar_interval에는 다음과 같은 값들을 지정할 수 있습니다.
+#	minute 또는 1m : 분 단위
+#	hour 또는 1h : 시간 단위
+#	day 또는 1d : 일 단위
+# 1주는 1w
+#	month 또는 1M : 월 단위
+#	quarter 또는 1q : 분기 단위
+#	year 또는 1y : 연 단위
+
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "my-date-histogram": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      }
+    }
+  }
+}
+
+# bank 인덱스에서 customers 수가 100명 이상 152명 미만인 구간의 문서를 검색해세요.
+# 구간을 나누어서 버킷 집계:
+  # 1. range - 우리가 범위를 설정
+  # 2. histogram - 구간의 간격만 설정
+  
+get bank/_search
+{
+
+  "size": 0, //집계에 사용된 내용은 중요하지 않아, 결과만 보여줘
+    "aggs": {
+    "100명이상 152명 미만": {
+      "range": {
+        "field": "customers",
+        "ranges":
+          {
+            "from": 100,
+            "to": 152
+}
+}
+}
+  }
+  
+}
+
+#위의 결과의 2명이 누군지는 따로 검색해야함
+
+
+
+GET bank/_search
+{
+  "query": {
+    "bool": { //bool쿼리로 해야함 딱 맞도록
+      "must": [
+        { "range": {
+          "customers": {
+            "gte": 100,
+            "lt": 152
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+#- 500명 단위로 구간을 나누어서 숫자 범위로 문서 검색를 검색해보세요.
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "500명단위고객수구분": {
+      "histogram": {
+        "field": "customers",
+        "interval": 500
+        // ,"offset": -50
+      }
+    }
+  }
+}
+
+  
+#- 월별로 구간을 나누어 검색해보세요.
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "개점월별검색구간": {
+      "date_histogram": {
+        "field": "date",
+        "calendar_interval": "1M"
+      }
+    }
+  }  
+}
+
+
+#- 년도별로 구간을 나누어 검색해보세요.
+#2. date_range - 직접 지정
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "연도별검색구간": {
+      "date_range": {
+        "field": "date",
+        "ranges": [
+            {
+            "from": "now-8y/d",
+            "to": "now-7y/d"
+          },
+                      {
+            "from": "now-7y/d",
+            "to": "now-6y/d"
+          },
+                                {
+            "from": "now-5y/d",
+            "to": "now-3y/d"
+          },
+          {
+            "from": "now-3y/d",
+            "to": "now"
+          }
+        ]
+      }
+    }
+  }  
+}
+
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "개점월별검색구간": {
+      "date_histogram": {
+        "field": "date",
+        "calendar_interval": "1y",
+        "format": "yyyy년" // yyyy-mm-dd
+      }
+    }
+  }  
+}
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "개점월별검색구간": {
+      "date_histogram": {
+        "field": "date",
+        "calendar_interval": "1y",
+        "format": "YY" // yyyy-mm-dd
+      }
+    }
+  }  
+}
+# terms 집계는 각 샤드에서 size 개수만큼 term을 뽑아 빈도수를 셉니다. 
+# 버킷을 최대 몇 개까지 생성할 것인지를 size로 지정합니다.
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+},
+"aggs": {
+    "my-terms-aggs": {
+      "terms": {
+        "field": "host.keyword",
+        "size": 10 // 가장 많이 접속한 사이트를 순서대로, 10개를 사이즈로 해도 4개만 나오는 이유는 데이터가 4개만 있으므로
+      }
+    }
+  }
+}
+
+GET kibana_sample_data_logs/_search
+{
+  "size":1 //하나만
+}
+GET kibana_sample_data_logs/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+},
+"aggs": {
+    "my-terms-aggs": {
+      "terms": {
+        "field": "host.keyword", // field값대로 terms가 구간을 나눠준다(동적 집계)
+        "size": 1 // 최상위 1개 
+      }
+    }
+  }
+}
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "composite-aggs": {
+      "composite": {
+        "size": 100, 
+        "sources": [
+          {
+            "terms-aggs": {
+              "terms": {
+                "field": "host.keyword"
+              }
+            }
+          },
+          {
+            "date-histogram-aggs": {
+              "date_histogram": {
+                "field": "@timestamp",
+                "calendar_interval": "day" // 날짜별로 자르기, 각각의 카운트 나오는 것을 알 수 있음
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "composite-aggs": {
+      "composite": {
+        "size": 100, 
+          "sources": [
+          {
+            "terms-aggs": {
+              "terms": {
+                "field": "host.keyword"
+              }
+            }
+          },
+                    {
+            "date-histogram-aggs": {
+              "date_histogram": {
+                "field": "@timestamp",
+                "calendar_interval": "day"
+              }
+            }
+          }
+        ],
+        "after": {
+          "terms-aggs": "cdn.elastic-elastic-elastic.org",
+          "date-histogram-aggs": 1675209600000
+        }
+      }
+    }
+  }
+}
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+},
+"aggs": {
+    "my-terms-aggs": {
+      "terms": {
+        "field": "taxless_total_price",
+        "size": 10 // 가장 많이 접속한 사이트를 순서대로, 10개를 사이즈로 해도 4개만 나오는 이유는 데이터가 4개만 있으므로
+      }
+    }
+  }
+}
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "composite-aggs": {
+      "composite": {
+        "size": 100, 
+          "sources": [
+          {
+            "terms-aggs": {
+              "terms": {
+                "field": "host.keyword"
+              }
+            }
+          },
+                    {
+            "date-histogram-aggs": {
+              "date_histogram": {
+                "field": "@timestamp",
+                "calendar_interval": "day"
+              }
+            }
+          }
+        ],
+        "after": {
+          "terms-aggs": "cdn.elastic-elastic-elastic.org",
+          "date-histogram-aggs": 1675209600000
+        }
+      }
+    }
+  }
+}
+
+
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "date-range-aggs": {
+      "date_range": {
+        "field": "order_date",
+        "ranges": [
+          {
+            "to": "now-10d/d"
+          },
+          {
+            "from": "now-10d/d",
+            "to": "now"
+          },
+          {
+            "from": "now"
+          }
+        ]
+      },
+      "aggs": {
+        "평균 고객수": {
+          "avg": {
+            "field": "taxless_total_price"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "합성쿼리": {
+      "composite": {
+        "size": 100, 
+        "sources": [
+          {
+            "서버빈도별개수세기": {
+              "terms": {
+                "field": "host.keyword"
+              }
+            }
+          },
+          {
+            "날짜로재정렬": {
+              "date_histogram": {
+                "field": "@timestamp",
+                "calendar_interval": "day",
+               "format": "yyyy-MM-dd" 
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+
+# order by와 limit 기능 수행
+
+
+GET kibana_sample_data_logs/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "합성쿼리": {
+      "composite": {
+        "size": 100, 
+        "sources": [
+          {
+            "서버빈도별개수세기": {
+              "terms": {
+                "field": "host.keyword"
+              }
+            }
+          },
+          {
+            "날짜로재정렬": {
+              "date_histogram": {
+                "field": "@timestamp",
+                "calendar_interval": "day",
+               "format": "yyyy-MM-dd" 
+              }
+            }
+          }
+        ],
+           "after": {
+          "서버빈도별개수세기": "cdn.elastic-elastic-elastic.org",
+           "날짜로재정렬": "2023-12-29"
+        }
+      }
+    }
+  }
+}
+
+
+# composite은 1. 조회 2. 집계 3. 정렬 4. 필터링 수행
+# pipeline은 composite에서 집계한 것을 작은 단위로 재집계하는 로직
+# cumulative_sum 집계 = pipeline 집계
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "daily-timestamp-bucket": {
+      "date_histogram": {
+        "field": "order_date",// 날짜순으로 구간 나누기(일별 집계)
+        "calendar_interval": "day" 
+      },
+      "aggs": {
+        "daily-total-quantity-average": { 
+          "avg": {
+            "field": "total_quantity"// 재집계: 날짜순으로 구간 나누고 그 안에서 avg 구하기
+          }
+        },
+        "pipeline-sum": { //pipeline: 집계가 된 aggs를 각각의 sum으로 만듬
+          "cumulative_sum": {
+            "buckets_path": "daily-total-quantity-average"
+          }
+        }
+      }
+    }
+  }
+}
+
+POST kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  }, 
+  "aggs": {
+    "daily-timestamp-bucket": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "daily-total-quantity-average": {
+          "avg": {
+            "field": "total_quantity"
+          }
+        }
+      }
+    },
+    "max-total-quantity": { //pipeliine은 집계를 바탕으로 재집계하여 나온 새로운 덩어리에서 또한번 집계
+      "max_bucket": { // 전체 bucket 중 가장 값이 큰 bucket(=SQL having=pipeline)
+        "buckets_path": "daily-timestamp-bucket>daily-total-quantity-average" 
+      }
+    }
+  }
+}
+
+
+GET kibana_sample_data_ecommerce/_search
+{
+  "size": 0,
+  "query": {
+    "match_all": {}
+  },
+  "aggs": {
+    "1차:일별구간집계": {
+      "date_histogram": {
+        "field": "order_date",
+        "calendar_interval": "day"
+      },
+      "aggs": {
+        "2차:주문별평균판매개수집계": {
+          "avg": {
+            "field": "total_quantity"
+          }
+        },
+        "최종결과": {
+          "cumulative_sum": {
+            "buckets_path": "2차:주문별평균판매개수집계"
+          }
+        }
+      }
+    }
+  }
+}
+/* 위치 키워드 문자열 별로 버킷을 나누어 집계해보세요.
+각 은행별로 고객 수를 집계한 다음 하위 집계를 수행해보세요.
+각 은행별로 고객 수의 평균을 집계한 다음 하위 집계를 수행해보세요.
+각 은행별로 총 고객 수와 고객 수 평균을 모두 집계합니다.*/
+
+
+delet bank
+# 1. 원래 있었던 bank 인덱스를 삭제하고 아래 데이터를 넣어주세요.\
+POST bank/_bulk
+{"index":{"_index":"bank", "_id": "1"}}
+{"date": "2018-06-01", "bank": "NH농협은행", "branch": "1호점", "location": "종각", "customers": 2314}
+{"index":{"_index":"bank", "_id": "2"}}
+{"date": "2017-06-01", "bank": "NH농협은행", "branch": "1호점", "location": "강남", "customers": 5412}
+{"index":{"_index":"bank", "_id": "3"}}
+{"date": "2017-07-10", "bank": "국민은행", "branch": "1호점", "location": "강남", "customers": 2543}
+{"index":{"_index":"bank", "_id": "4"}}
+{"date": "2018-07-15", "bank": "NH농협은행", "branch": "2호점", "location": "강남", "customers": 4456}
+{"index":{"_index":"bank", "_id": "5"}}
+{"date": "2019-08-07", "bank": "NH농협은행", "branch": "3호점", "location": "강남", "customers": 1562}
+{"index":{"_index":"bank", "_id": "6"}}
+{"date": "2020-08-18", "bank": "NH농협은행", "branch": "4호점", "location": "강남", "customers": 5724}
+{"index":{"_index":"bank", "_id": "7"}}
+{"date": "2020-09-02", "bank": "국민은행", "branch": "1호점", "location": "신촌", "customers": 1002}
+{"index":{"_index":"bank", "_id": "8"}}
+{"date": "2020-09-11", "bank": "국민은행", "branch": "1호점", "location": "양재", "customers": 4121}
+{"index":{"_index":"bank", "_id": "9"}}
+{"date": "2020-09-20", "bank": "NH농협은행", "branch": "3호점", "location": "홍제", "customers": 1021}
+{"index":{"_index":"bank", "_id": "10"}}
+{"date": "2020-10-01", "bank": "국민은행", "branch": "1호점", "location": "불광", "customers": 971}
+{"index":{"_index":"bank", "_id": "11"}}
+{"date": "2019-06-01", "bank": "NH농협은행", "branch": "2호점", "location": "종각", "customers": 875}
+{"index":{"_index":"bank", "_id": "12"}}
+{"date": "2018-06-01", "bank": "국민은행", "branch": "2호점", "location": "강남", "customers": 1506}
+{"index":{"_index":"bank", "_id": "13"}}
+{"date": "2020-09-02", "bank": "국민은행", "branch": "2호점", "location": "신촌", "customers": 3912}
+{"index":{"_index":"bank", "_id": "14"}}
+{"date": "2020-09-11", "bank": "국민은행", "branch": "2호점", "location": "양재", "customers": 784}
+{"index":{"_index":"bank", "_id": "15"}}
+{"date": "2020-10-01", "bank": "국민은행", "branch": "2호점", "location": "불광", "customers": 4513}
+{"index":{"_index":"bank", "_id": "16"}}
+{"date": "2020-10-01", "bank": "국민은행", "branch": "3호점", "location": "불광", "customers": 235}
+{"index":{"_index":"bank", "_id": "17"}}
+{"date": "2016-07-01", "bank": "기업은행", "branch": "1호점", "location": "불광", "customers": 971}
+{"index":{"_index":"bank", "_id": "18"}}
+{"date": "2017-10-01", "bank": "기업은행", "branch": "2호점", "location": "불광", "customers": 100}
+{"index":{"_index":"bank", "_id": "19"}}
+{"date": "2018-11-01", "bank": "기업은행", "branch": "3호점", "location": "불광", "customers": 151}
+{"index":{"_index":"bank", "_id": "20"}}
+{"date": "2020-10-01", "bank": "기업은행", "branch": "4호점", "location": "불광", "customers": 1302}
+
+
+get bank/_mapping
+
+# 위치 키워드 문자열 별로 버킷을 나누어 집계해보세요.
+get bank/_search
+{
+   "size": 0, // 모든 데이터를 대상으로 aggregation을 할 것이다
+    "aggs": {
+      "위치별 은행 개수":{
+        "terms": {
+          "field": "location.keyword" // location은 텍스트라 나누어지지 않음, 따라서 location.keyword , count는 갯수를 새는것이므로 terms를 이용해 keyword 고유값으로 구한다
+      }
+}
+    }
+  }
+
+
+
+# 각 은행별로 고객 수를 집계한 다음 하위 집계를 수행해보세요.
+# 은행별(1차) -> 고객수 2차로 나누기
+
+# 각 은행별로 고객 수의 평균을 집계한 다음 하위 집계를 수행해보세요.
+# 은행별 -> 고객수 
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "은행별 지점 개수": {
+      "terms": {
+        "field": "bank.keyword"
+      },
+      "aggs": {
+        "총 고객 수": {
+          "sum": {
+            "field": "customers"
+          }
+        }
+      }
+    }
+  }
+}
+
+# 각 은행별로 고객 수의 평균을 집계한 다음 하위 집계를 수행해보세요.
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "은행별 지점 개수": {
+      "terms": {
+        "field": "bank.keyword"
+      },
+      "aggs": {
+        "평균 고객 수": {
+          "avg": {
+            "field": "customers"
+          }
+        }
+      }
+    }
+  }
+}
+
+# 각 은행별로 총 고객 수와 고객 수 평균을 모두 집계합니다.
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "은행별 지점 개수": {
+      "terms": {
+        "field": "bank.keyword"
+      },
+      "aggs": {
+        "평균 고객 수": {
+          "avg": {
+            "field": "customers"
+          }
+        },
+        "총 고객 수": {
+          "sum": {
+            "field": "customers"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+# 불광 지역에 있는 국민 은행의 은행 당 고객수
+# search - 불광 -> 국민은행 -> 고객수
+GET bank/_search
+{
+  "query": {
+    "match": {
+      "location": "불광"
+    }
+  },
+  "size":0,
+  "aggs": {
+    "은행별 개수": {
+      "terms": {
+        "field": "bank.keyword"
+      },
+      "aggs": {
+        "총 고객 수": {
+          "sum": {
+            "field" : "customers"
+          }
+        }
+      }
+    }
+  }
+}
+
+
+# 각 은행별로 고객 수를 집계한 다음 하위 집계를 수행해보세요.
+# 은행별 -> 고객수 
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "은행별 지점 개수": {
+      "terms": {
+        "field": "bank.keyword"
+      },
+      "aggs": {
+        "총 고객 수": {
+          "sum": {
+            "field": "customers"
+          }
+        }
+      }
+    }
+  }
+}
+
+# 각 은행별로 고객 수의 평균을 집계한 다음 하위 집계를 수행해보세요.
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "은행별 지점 개수": {
+      "terms": {
+        "field": "bank.keyword"
+      },
+      "aggs": {
+        "평균 고객 수": {
+          "avg": {
+            "field": "customers"
+          }
+        }
+      }
+    }
+  }
+}
+
+# 각 은행별로 총 고객 수와 고객 수 평균을 모두 집계합니다.
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "은행별 지점 개수": {
+      "terms": {
+        "field": "bank.keyword"
+      },
+      "aggs": {
+        "평균 고객 수": {
+          "avg": {
+            "field": "customers"
+          }
+        },
+        "총 고객 수": {
+          "sum": {
+            "field": "customers"
+          }
+        }
+      }
+    }
+  }
+}
+
+  # 은행의 개점년도 별로  > 은행별 고객수 합 
+  
+  # 1단계  - 은행의 개점년도 별로 
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "개점년도별 집계": {
+      "date_histogram": {
+        "field": "date",
+        "calendar_interval": "1y",
+        "format": "yyyy년"
+      },
+      "aggs": {
+        "연도별 은행 고객수": {
+          "sum": {
+            "field": "customers"
+          }
+        }
+      }
+    },
+    "연간 은행 방문 고객수 총합": {
+      "max_bucket": {
+        "buckets_path": "개점년도별 집계>연도별 은행 고객수"
+      }
+    }
+  }
+}
+  
+
+# 은행의 개점년도 별로  > 은행별 고객수 합 
+  
+  # 1단계  - 은행의 개점년도 별로 
+GET bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "개점년도별 집계": {
+      "date_histogram": {
+        "field": "date",
+        "calendar_interval": "1y",
+        "format": "yyyy년"
+      },
+      "aggs": {
+        "연도별 은행 고객수": {
+          "sum": {
+            "field": "customers"
+          }
+        }
+      }
+    },
+    "연간 은행 방문 고객수 총합": {
+      "max_bucket": {
+        "buckets_path": "개점년도별 집계>연도별 은행 고객수"
+      }
+    }
+  }
+}
+  
